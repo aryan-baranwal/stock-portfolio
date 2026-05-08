@@ -1,0 +1,76 @@
+spring:
+  application:
+    name: notification-service
+
+  config:
+    import: optional:configserver:http://localhost:8888
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/notif_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    listener:
+      simple:
+        retry:
+          enabled: true
+          initial-interval: 5000
+          max-attempts: 3
+          multiplier: 6
+
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:shivaniavanikkarasi@gmail.com}
+    password: ${MAIL_PASSWORD:ngyg ayfy mape rxlz}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+server:
+  port: 8084
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka
+  instance:
+    prefer-ip-address: true
+
+rabbitmq:
+  exchange: portfolio.exchange
+  dlx: portfolio.dlx
+  queues:
+    notification: notification.queue
+    dlq: notification.dlq
+  routing-keys:
+    user-registered: user.registered
+    alert-triggered: alert.triggered
+    daily-summary: report.daily_summary
+
+notification:
+  from-email: ${spring.mail.username}
+  from-name: "Stock Portfolio App"
+
+logging:
+  level:
+    com.portfolio.notification: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} | %-5level | notification-service | %X{traceId} | %msg%n"
