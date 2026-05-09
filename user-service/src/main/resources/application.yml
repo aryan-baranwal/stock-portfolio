@@ -1,0 +1,24 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: USER-SERVICE
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/userdb
+    username: root
+    password: root123
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+jwt:
+  secret: your-very-long-super-secret-key-at-least-256-bits-long-for-dev-only
