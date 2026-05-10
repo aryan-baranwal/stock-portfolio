@@ -14,7 +14,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -29,19 +28,23 @@ public class JwtServiceImpl implements JwtService {
     @Value("${jwt.refresh-token-expiry}")
     private long refreshTokenExpiry;
 
+    // ================= KEY =================
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
+    // ================= ACCESS TOKEN =================
     @Override
     public String generateAccessToken(User user) {
         return Jwts.builder()
                 .id(UUID.randomUUID().toString())
                 .subject(user.getId().toString())
                 .claim("email", user.getEmail())
-                .claim("roles", user.getRoles().stream()
-                        .map(r -> r.getName().name())
-                        .collect(Collectors.toList()))
+                .claim("roles",
+                        user.getRoles().stream()
+                                .map(r -> r.getName().name())
+                                .toList()
+                )
                 .issuer("portfolio-auth-service")
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + accessTokenExpiry))
@@ -49,6 +52,7 @@ public class JwtServiceImpl implements JwtService {
                 .compact();
     }
 
+    // ================= REFRESH TOKEN =================
     @Override
     public String generateRefreshToken(User user) {
         return Jwts.builder()
@@ -59,6 +63,15 @@ public class JwtServiceImpl implements JwtService {
                 .expiration(new Date(System.currentTimeMillis() + refreshTokenExpiry))
                 .signWith(getSigningKey())
                 .compact();
+    }
+
+    // ================= CLAIM EXTRACTION =================
+    private Claims getClaims(String token) {
+        return Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
     @Override
@@ -76,13 +89,21 @@ public class JwtServiceImpl implements JwtService {
         return getClaims(token).getId();
     }
 
+    // ================= ROLE EXTRACTION (CRITICAL FIX) =================
     @Override
     public List<String> extractRoles(String token) {
         Claims claims = getClaims(token);
+
         List<?> roles = claims.get("roles", List.class);
-        return roles.stream().map(Object::toString).toList();
+
+        if (roles == null) return List.of();
+
+        return roles.stream()
+                .map(Object::toString)
+                .toList();
     }
 
+    // ================= VALIDATION =================
     @Override
     public boolean isTokenValid(String token) {
         try {
@@ -97,13 +118,5 @@ public class JwtServiceImpl implements JwtService {
     @Override
     public long getAccessTokenExpiry() {
         return accessTokenExpiry;
-    }
-
-    private Claims getClaims(String token) {
-        return Jwts.parser()
-                .verifyWith(getSigningKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
     }
 }

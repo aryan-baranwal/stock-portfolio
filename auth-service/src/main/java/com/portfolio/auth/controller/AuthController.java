@@ -54,10 +54,7 @@ public class AuthController {
 
     @Operation(summary = "Get current user info")
     @GetMapping("/me")
-    public ResponseEntity<ApiResponse<String>> me(
-            org.springframework.security.core.Authentication authentication
-    ) {
-        String email = authentication.getName();
+    public ResponseEntity<ApiResponse<String>> me(@RequestHeader("X-User-Email") String email) {
         return ResponseEntity.ok(ApiResponse.success(email));
     }
 

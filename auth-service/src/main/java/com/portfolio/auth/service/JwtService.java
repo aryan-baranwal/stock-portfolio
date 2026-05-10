@@ -16,9 +16,10 @@ public interface JwtService {
 
     String extractJti(String token);
 
-    List<String> extractRoles(String token);   // ✅ NEW
-
     boolean isTokenValid(String token);
 
     long getAccessTokenExpiry();
+
+
+    List<String> extractRoles(String token);
 }

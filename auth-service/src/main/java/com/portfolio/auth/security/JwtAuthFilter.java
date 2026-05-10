@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -28,7 +29,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
+                                    FilterChain filterChain)
+            throws ServletException, IOException {
 
         String authHeader = request.getHeader("Authorization");
 
@@ -36,47 +38,55 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
             return;
         }
-        String path = request.getRequestURI();
 
-        if (path.startsWith("/oauth2/")
-                || path.startsWith("/login/oauth2/")
-                || path.startsWith("/error")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
         String token = authHeader.substring(7);
 
         try {
+            // 1. Validate token
             if (!jwtService.isTokenValid(token)) {
-                filterChain.doFilter(request, response);
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 return;
             }
 
+            // 2. Check blacklist
             String jti = jwtService.extractJti(token);
-
             if (tokenBlacklistService.isBlacklisted(jti)) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 return;
             }
 
+            // 3. Extract user info
             String email = jwtService.extractEmail(token);
             List<String> roles = jwtService.extractRoles(token);
 
-            List<SimpleGrantedAuthority> authorities = roles.stream()
-                    .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
-                    .toList();
+            // 4. Prevent duplicate auth
+            if (SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(
-                            email,
-                            null,
-                            authorities
-                    );
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(
+                                email,
+                                null,
+                                roles.stream()
+                                        .filter(r -> r != null && !r.isBlank())
+                                        .map(role -> {
+                                            String cleanRole = role.replace("ROLE_", "");
+                                            return new SimpleGrantedAuthority("ROLE_" + cleanRole);
+                                        })
+                                        .distinct()
+                                        .toList()
+                        );
 
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+                authentication.setDetails(
+                        new WebAuthenticationDetailsSource().buildDetails(request)
+                );
+
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            }
 
         } catch (Exception e) {
-            log.warn("JWT processing error: {}", e.getMessage());
+            log.error("JWT processing failed: {}", e.getMessage());
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
         }
 
         filterChain.doFilter(request, response);
