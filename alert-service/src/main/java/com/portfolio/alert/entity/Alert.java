@@ -37,6 +37,7 @@ public class Alert {
     private BigDecimal lossThresholdPercent;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "alert_condition")
     private AlertCondition condition;
 
     @Enumerated(EnumType.STRING)
