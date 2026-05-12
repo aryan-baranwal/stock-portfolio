@@ -1,0 +1,24 @@
+server:
+  port: ${SERVER_PORT:8082}
+
+spring:
+  application:
+    name: USER-SERVICE
+
+  datasource:
+    url: jdbc:mysql://${DB_HOST:54.252.207.35}:${DB_PORT:3306}/${DB_NAME:user_db}
+    username: ${DB_USERNAME:micro_user}
+    password: ${DB_PASSWORD:micro123}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+
+jwt:
+  secret: ${JWT_SECRET:your-very-long-super-secret-key-at-least-256-bits-long-for-dev-only}
