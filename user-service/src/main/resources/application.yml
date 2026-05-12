@@ -1,14 +1,14 @@
 server:
-  port: 8082
+  port: ${SERVER_PORT:8082}
 
 spring:
   application:
     name: USER-SERVICE
 
   datasource:
-    url: jdbc:mysql://localhost:3306/userdb
-    username: root
-    password: root123
+    url: jdbc:mysql://${DB_HOST:54.252.207.35}:${DB_PORT:3306}/${DB_NAME:user_db}
+    username: ${DB_USERNAME:micro_user}
+    password: ${DB_PASSWORD:micro123}
 
   jpa:
     hibernate:
@@ -18,7 +18,7 @@ spring:
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
 
 jwt:
-  secret: your-very-long-super-secret-key-at-least-256-bits-long-for-dev-only
+  secret: ${JWT_SECRET:your-very-long-super-secret-key-at-least-256-bits-long-for-dev-only}

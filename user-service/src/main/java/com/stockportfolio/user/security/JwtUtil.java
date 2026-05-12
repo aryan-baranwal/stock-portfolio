@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
+import java.util.List;
 
 @Component
 public class JwtUtil {
@@ -23,26 +24,30 @@ public class JwtUtil {
                 .getBody();
     }
 
+    // JWT subject-ல் இருக்கும் email extract
     public String extractEmail(String token) {
-
-        return extractClaims(token).getSubject();
+        return extractClaims(token).get("email", String.class);
     }
 
+    // JWT-ல் இருக்கும் roles extract
+    @SuppressWarnings("unchecked")
+    public List<String> extractRoles(String token) {
+        return (List<String>) extractClaims(token).get("roles");
+    }
+
+    // Token valid என check
     public boolean validateToken(String token) {
 
         try {
-
             extractClaims(token);
             return true;
-
         } catch (Exception e) {
-
             return false;
         }
     }
 
+    // Secret key create
     private Key getSignKey() {
-
         return Keys.hmacShaKeyFor(secret.getBytes());
     }
 }
